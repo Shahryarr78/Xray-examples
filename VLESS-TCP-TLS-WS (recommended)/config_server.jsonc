@@ -1,74 +1,70 @@
 {
-    "log": {
-        "loglevel": "warning"
+  "log": { "loglevel": "warning" },
+
+  "inbounds": [
+    /* ---------- TLS (external 443 ➜ internal 8080) ---------- */
+    {
+      "port": 8080,                   // leave as-is — Koyeb maps 443→8080
+      "protocol": "vless",
+
+      "settings": {
+        "clients": [
+          {
+            "id": "00f5f802-10d3-4fec-a9c9-bbdeb4f8ae63",   // ← your UUID
+            "level": 0,
+            "email": "user@koyeb.com"
+          }
+        ],
+        "decryption": "none",
+
+        "fallbacks": [
+          { "dest": 80 },             // health probe for Koyeb
+          {
+            "path": "/xray-ir-g89b2", // ← pick ANY unique string, keep the “/”
+            "dest": 1234,
+            "xver": 1
+          }
+        ]
+      },
+
+      "streamSettings": {
+        "network": "tcp",
+        "security": "tls",
+        "tlsSettings": {
+          "alpn": [ "http/1.1" ],
+          "certificates": [
+            {
+              "certificateFile": "/etc/koyeb/ssl/cert.pem",
+              "keyFile":        "/etc/koyeb/ssl/key.pem"
+              // these files are created automatically by Koyeb
+            }
+          ]
+        }
+      }
     },
-    "inbounds": [
-        {
-            "port": 443,
-            "protocol": "vless",
-            "settings": {
-                "clients": [
-                    {
-                        "id": "", // 填写你的 UUID
-                        "level": 0,
-                        "email": "love@example.com"
-                    }
-                ],
-                "decryption": "none",
-                "fallbacks": [
-                    {
-                        "dest": 80
-                    },
-                    {
-                        "path": "/websocket", // 必须换成自定义的 PATH
-                        "dest": 1234,
-                        "xver": 1
-                    }
-                ]
-            },
-            "streamSettings": {
-                "network": "tcp",
-                "security": "tls",
-                "tlsSettings": {
-                    "alpn": [
-                        "http/1.1"
-                    ],
-                    "certificates": [
-                        {
-                            "certificateFile": "/path/to/fullchain.crt", // 换成你的证书，绝对路径
-                            "keyFile": "/path/to/private.key" // 换成你的私钥，绝对路径
-                        }
-                    ]
-                }
-            }
-        },
-        {
-            "port": 1234,
-            "listen": "127.0.0.1",
-            "protocol": "vless",
-            "settings": {
-                "clients": [
-                    {
-                        "id": "", // 填写你的 UUID
-                        "level": 0,
-                        "email": "love@example.com"
-                    }
-                ],
-                "decryption": "none"
-            },
-            "streamSettings": {
-                "network": "ws",
-                "security": "none",
-                "wsSettings": {
-                    "acceptProxyProtocol": true, // 提醒：若你用 Nginx/Caddy 等反代 WS，需要删掉这行
-                    "path": "/websocket" // 必须换成自定义的 PATH，需要和上面的一致
-                }
-            }
+
+    /* ---------- internal WebSocket listener (tunneled by fallback) ---------- */
+    {
+      "port": 1234,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+
+      "settings": {
+        "clients": [
+          { "id": "00f5f802-10d3-4fec-a9c9-bbdeb4f8ae63", "level": 0 }
+        ],
+        "decryption": "none"
+      },
+
+      "streamSettings": {
+        "network": "ws",
+        "security": "none",
+        "wsSettings": {
+          "path": "/xray-ir-g89b2"   // ← must match the fallback path above
         }
-    ],
-    "outbounds": [
-        {
-            "protocol": "freedom"
-        }
-    ]
+      }
+    }
+  ],
+
+  "outbounds": [ { "protocol": "freedom" } ]
 }
