@@ -1,70 +1,39 @@
 {
-  "log": { "loglevel": "warning" },
-
-  "inbounds": [
-    /* ---------- TLS (external 443 ➜ internal 8080) ---------- */
-    {
-      "port": 8080,                   // leave as-is — Koyeb maps 443→8080
-      "protocol": "vless",
-
-      "settings": {
-        "clients": [
-          {
-            "id": "00f5f802-10d3-4fec-a9c9-bbdeb4f8ae63",   // ← your UUID
-            "level": 0,
-            "email": "user@koyeb.com"
-          }
-        ],
-        "decryption": "none",
-
-        "fallbacks": [
-          { "dest": 80 },             // health probe for Koyeb
-          {
-            "path": "/xray-ir-g89b2", // ← pick ANY unique string, keep the “/”
-            "dest": 1234,
-            "xver": 1
-          }
-        ]
-      },
-
-      "streamSettings": {
-        "network": "ws",
-        "security": "none",
-        "tlsSettings": {
-          "alpn": [ "http/1.1" ],
-          "certificates": [
-            {
-              "certificateFile": "/etc/koyeb/ssl/cert.pem",
-              "keyFile":        "/etc/koyeb/ssl/key.pem"
-              // these files are created automatically by Koyeb
-            }
-          ]
-        }
-      }
-    },
-
-    /* ---------- internal WebSocket listener (tunneled by fallback) ---------- */
-    {
-      "port": 1234,
-      "listen": "127.0.0.1",
-      "protocol": "vless",
-
-      "settings": {
-        "clients": [
-          { "id": "00f5f802-10d3-4fec-a9c9-bbdeb4f8ae63", "level": 0 }
-        ],
-        "decryption": "none"
-      },
-
-      "streamSettings": {
-        "network": "ws",
-        "security": "none",
-        "wsSettings": {
-          "path": "/xray-ir-g89b2"   // ← must match the fallback path above
-        }
-      }
+  // ──--- FIRST (public) INBOUND ---────────────────────────
+  "port": 8080,
+  "protocol": "vless",
+  "settings": {
+    "clients": [
+      { "id": "00f5f802-10d3-4fec-a9c9-bbdeb4f8ae63" }
+    ],
+    "decryption": "none",
+    "fallbacks": []
+  },
+  "streamSettings": {
+    "network": "ws",
+    "security": "none",        // <-- TLS handled by Railway edge
+    "wsSettings": {
+      "path": "/xray-ir-g89b2"
     }
-  ],
+  }
+},
 
-  "outbounds": [ { "protocol": "freedom" } ]
+{
+  // ──--- SECOND (internal) INBOUND ---──────────────────────
+  "port": 1234,
+  "listen": "127.0.0.1",
+  "protocol": "vless",
+  "settings": {
+    "clients": [
+      { "id": "00f5f802-10d3-4fec-a9c9-bbdeb4f8ae63" }
+    ],
+    "decryption": "none"
+  },
+  "streamSettings": {
+    "network": "ws",
+    "security": "none",
+    "wsSettings": {
+      "path": "/xray-ir-g89b2"
+    }
+  }
 }
