@@ -28,8 +28,8 @@
       },
 
       "streamSettings": {
-        "network": "tcp",
-        "security": "tls",
+        "network": "ws",
+        "security": "none",
         "tlsSettings": {
           "alpn": [ "http/1.1" ],
           "certificates": [
